@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Croc World HN</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#111}
+  .store{max-width:1100px;margin:0 auto;padding:0 16px 80px}
+  .hero{text-align:center;padding:48px 16px 28px;border-bottom:1px solid #eee;margin-bottom:28px}
+  .hero h1{font-size:26px;font-weight:500;letter-spacing:.1em;text-transform:uppercase}
+  .hero p{font-size:13px;color:#888;margin-top:6px}
+  .price-banner{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:28px}
+  .pill{font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid #e0e0e0;color:#555}
+  .pill b{color:#111;font-weight:600}
+  .filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+  .filter-bar label{font-size:13px;color:#888;white-space:nowrap}
+  .cat-select-wrap{position:relative;flex:1;max-width:280px}
+  .cat-select-wrap select{appearance:none;-webkit-appearance:none;width:100%;padding:9px 36px 9px 14px;border:1px solid #e0e0e0;border-radius:10px;font-size:13px;background:#fff;color:#111;cursor:pointer;outline:none;transition:border-color .15s}
+  .cat-select-wrap select:focus{border-color:#111}
+  .cat-select-wrap::after{content:'';position:absolute;right:13px;top:50%;transform:translateY(-50%);width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid #888;pointer-events:none}
+  .result-count{font-size:12px;color:#aaa;margin-left:auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px}
+  .card{border:1px solid #eee;border-radius:12px;padding:12px;cursor:pointer;transition:all .2s}
+  .card.sel{border-color:#111;background:#fafafa;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+  .card .code{font-size:10px;color:#bbb;margin-bottom:6px}
+  .card .img-wrap{aspect-ratio:1;background:#f9f9f9;border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:10px;position:relative}
+  .card img{width:100%;height:100%;object-fit:cover}
+  .card .no-img{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f5f5f5;font-size:11px;color:#bbb;gap:4px}
+  .card .no-img span{font-size:22px}
+  .card .name{font-size:13px;font-weight:500;margin-bottom:3px}
+  .card .price{font-size:12px;color:#888}
+  .card .cat-tag{font-size:10px;color:#555;background:#f0f0f0;padding:2px 7px;border-radius:10px;display:inline-block;margin-top:5px}
+  .section-title{font-size:17px;font-weight:600;margin:36px 0 14px;display:flex;align-items:center;gap:10px}
+  .section-title span{font-size:12px;color:#aaa;font-weight:400}
+  #cart-btn{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:14px 28px;border-radius:30px;display:none;align-items:center;gap:12px;box-shadow:0 10px 25px rgba(0,0,0,.2);cursor:pointer;z-index:100;white-space:nowrap}
+  #admin-trigger{position:fixed;bottom:28px;right:20px;width:34px;height:34px;border-radius:50%;background:#f0f0f0;border:none;cursor:pointer;font-size:14px;color:#bbb;z-index:200;display:flex;align-items:center;justify-content:center;transition:all .2s}
+  #admin-trigger:hover{background:#e0e0e0;color:#666}
+  #status{text-align:center;padding:48px 16px;color:#888;font-size:14px}
+  .spinner{width:28px;height:28px;border:3px solid #eee;border-top-color:#111;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;align-items:center;justify-content:center}
+  .modal-bg.open{display:flex}
+  .modal{background:#fff;border-radius:16px;width:90%;max-width:380px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+  .modal-head{padding:22px 24px 0;font-size:16px;font-weight:600}
+  .modal-body{padding:16px 24px 24px}
+  .modal-body p{font-size:13px;color:#888;margin-bottom:16px;margin-top:6px}
+  .modal-body input{width:100%;border:1px solid #e0e0e0;border-radius:8px;padding:10px 14px;font-size:14px;outline:none;transition:border-color .15s}
+  .modal-body input:focus{border-color:#111}
+  .modal-body input.shake{animation:shake .3s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .error-msg{font-size:12px;color:#c00;margin-top:8px;min-height:16px}
+  .btn-row{display:flex;gap:8px;margin-top:16px}
+  .btn-row button{flex:1;padding:10px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:500}
+  .btn-primary{background:#111;color:#fff}
+  .btn-secondary{background:#f5f5f5;color:#555}
+  #admin-panel{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;overflow-y:auto}
+  #admin-inner{background:#fff;max-width:960px;margin:32px auto;border-radius:16px;overflow:hidden}
+  #admin-header{background:#111;color:#fff;padding:20px 24px;display:flex;align-items:center;justify-content:space-between}
+  #admin-header h2{font-size:15px;font-weight:500}
+  .admin-hbtn{background:none;border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px}
+  #admin-body{padding:24px}
+  #admin-progress{background:#f5f5f5;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;display:flex;align-items:center;gap:12px}
+  #progress-bar-wrap{flex:1;background:#e0e0e0;border-radius:4px;height:5px}
+  #progress-bar{height:5px;background:#111;border-radius:4px;transition:width .3s}
+  .admin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+  .admin-card{border:2px solid #eee;border-radius:10px;overflow:hidden;transition:border-color .2s}
+  .admin-card.categorized{border-color:#22c55e}
+  .admin-card .admin-img{aspect-ratio:1;background:#f9f9f9;position:relative}
+  .admin-card img{width:100%;height:100%;object-fit:cover;display:block}
+  .admin-card .no-img-admin{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#ccc}
+  .admin-card .admin-info{padding:6px 8px 8px}
+  .admin-card .fname{font-size:10px;color:#aaa;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .admin-card select{width:100%;font-size:11px;border:1px solid #e0e0e0;border-radius:6px;padding:4px 6px;background:#fff;cursor:pointer}
+  .admin-filter-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .admin-filter-row button{font-size:11px;padding:5px 12px;border-radius:16px;border:1px solid #e0e0e0;background:#fff;cursor:pointer}
+  .admin-filter-row button.active{background:#111;color:#fff;border-color:#111}
+  #admin-search{width:100%;border:1px solid #e0e0e0;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:14px;outline:none}
+  #admin-search:focus{border-color:#111}
+
+  /* ── Banner envío ── */
+  .delivery-banner{background:#111;color:#fff;text-align:center;padding:10px 16px;font-size:13px;font-weight:500;letter-spacing:.03em}
+  .delivery-banner span{color:#f5c518}
+
+  /* ── Card mejorada ── */
+  .card{cursor:default}
+  .card .img-wrap{cursor:pointer}
+  .card .img-wrap:hover{opacity:.88}
+  .card .card-actions{display:flex;gap:6px;margin-top:8px}
+  .card .btn-ver{flex:1;padding:6px 0;border:1px solid #e0e0e0;border-radius:7px;background:#fff;font-size:12px;color:#555;cursor:pointer;transition:all .15s}
+  .card .btn-ver:hover{border-color:#111;color:#111}
+  .card .btn-add{flex:1;padding:6px 0;border:none;border-radius:7px;background:#111;font-size:12px;color:#fff;cursor:pointer;transition:background .15s}
+  .card .btn-add:hover{background:#333}
+  .card.sel .btn-add{background:#c00}
+  .card.sel .btn-add:hover{background:#a00}
+
+  /* ── Modal imagen grande ── */
+  #img-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;align-items:center;justify-content:center;padding:20px}
+  #img-modal.open{display:flex;flex-direction:column;gap:0}
+  #img-modal-box{background:#fff;border-radius:16px;overflow:hidden;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.5);position:relative}
+  #img-modal-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.35);border:none;color:#fff;font-size:16px;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center}
+  #img-modal-img{width:100%;aspect-ratio:1;object-fit:contain;background:#f9f9f9;display:block}
+  #img-modal-footer{padding:14px 16px;display:flex;align-items:center;gap:10px;border-top:1px solid #eee}
+  #img-modal-info{flex:1}
+  #img-modal-name{font-size:14px;font-weight:600}
+  #img-modal-price{font-size:12px;color:#888;margin-top:2px}
+  #img-modal-add{padding:9px 22px;border:none;border-radius:8px;background:#111;color:#fff;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+  #img-modal-add.en-pedido{background:#c00}
+</style>
+</head>
+<body>
+
+<div class="delivery-banner">🛵 Envío a domicilio a todo Honduras &nbsp;<span>L. 70</span></div>
+
+<div class="store">
+  <div class="hero">
+    <h1>Croc World HN</h1>
+    <p>Personaliza tu estilo</p>
+  </div>
+  <div class="price-banner">
+    <div class="pill">1 Pin x <b>L. 25</b></div>
+    <div class="pill">5 Pines x <b>L. 100</b></div>
+    <div class="pill">12 Pines x <b>L. 200</b></div>
+  </div>
+  <div class="filter-bar" id="filter-bar" style="display:none">
+    <label>Categoría</label>
+    <div class="cat-select-wrap">
+      <select id="cat-select" onchange="onCatChange(this.value)">
+        <option value="all">✨ Todos los pines</option>
+      </select>
+    </div>
+    <span class="result-count" id="result-count"></span>
+  </div>
+  <div id="status"><div class="spinner"></div>Cargando catálogo...</div>
+  <div id="catalog"></div>
+</div>
+
+<button id="admin-trigger" onclick="openLoginModal()" title="Admin">⚙</button>
+
+<div id="cart-btn" onclick="sendWA()">
+  <span>🛒 Ver Pedido (<span id="cart-count">0</span>) · <span id="cart-total">L. 0</span></span>
+  <button onclick="event.stopPropagation();clearCart()" style="background:none;border:none;color:#888;font-size:11px;cursor:pointer;border-left:1px solid #444;padding-left:10px">Limpiar</button>
+</div>
+
+<div class="modal-bg" id="login-modal">
+  <div class="modal">
+    <div class="modal-head">Acceso de administrador</div>
+    <div class="modal-body">
+      <p>Ingresa la contraseña para acceder al panel de categorías.</p>
+      <input type="password" id="admin-pwd" placeholder="Contraseña" onkeydown="if(event.key==='Enter')checkPwd()">
+      <div class="error-msg" id="pwd-error"></div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeLoginModal()">Cancelar</button>
+        <button class="btn-primary" onclick="checkPwd()">Entrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="admin-panel">
+  <div id="admin-inner">
+    <div id="admin-header">
+      <h2>⚙️ Panel de categorías</h2>
+      <div style="display:flex;gap:8px">
+        <button class="admin-hbtn" onclick="exportCategories()">📋 Exportar</button>
+        <button class="admin-hbtn" onclick="closeAdmin()">✕ Cerrar</button>
+      </div>
+    </div>
+    <div id="admin-body">
+      <div id="admin-progress">
+        <span id="progress-text">Cargando...</span>
+        <div id="progress-bar-wrap"><div id="progress-bar" style="width:0%"></div></div>
+      </div>
+      <input id="admin-search" placeholder="🔍 Buscar por código o nombre..." oninput="renderAdmin()">
+      <div class="admin-filter-row" id="admin-filter"></div>
+      <div class="admin-grid" id="admin-grid"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal imagen grande -->
+<div id="img-modal">
+  <div id="img-modal-box">
+    <button id="img-modal-close" onclick="closeImgModal()">✕</button>
+    <img id="img-modal-img" src="" alt="">
+    <div id="img-modal-footer">
+      <div id="img-modal-info">
+        <div id="img-modal-name"></div>
+        <div id="img-modal-price"></div>
+      </div>
+      <button id="img-modal-add" onclick="toggleCartFromModal()">+ Agregar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  CONFIGURACIÓN
+// ══════════════════════════════════════════════════
+const GH_USER   = 'Beraka-ai';
+const GH_REPO   = 'CROCS';        // ← nuevo repositorio
+const GH_BRANCH = 'main';
+const WA_NUMBER = '50498527477';
+const DEFAULT_PRICE = 25;
+const ADMIN_PASSWORD = 'croc2024'; // ⚠️ Cambia esto antes de publicar
+// ══════════════════════════════════════════════════
+
+const CATS = [
+  { id:'sin-cat',    name:'📦 Sin categoría'        },
+  { id:'cultura',    name:'🎬 Cultura pop / Series'  },
+  { id:'animales',   name:'🐾 Animales'              },
+  { id:'naturaleza', name:'🌸 Flores y naturaleza'   },
+  { id:'emojis',     name:'😄 Emojis y frases'       },
+  { id:'deportes',   name:'⚽ Deportes'              },
+  { id:'abstracto',  name:'🎨 Abstractos / Otros'    },
+];
+
+// Catálogo completo (324 pines) con categorías preasignadas
+const CATALOG = [
+  {code:"1P",name:"Tacón rosa",price:DEFAULT_PRICE,cat:"cultura"},{code:"2P",name:"Cartera rosa",price:DEFAULT_PRICE,cat:"cultura"},{code:"3P",name:"Espejo rosa",price:DEFAULT_PRICE,cat:"cultura"},{code:"4P",name:"Labios rosa",price:DEFAULT_PRICE,cat:"cultura"},{code:"5P",name:"Corazón corona",price:DEFAULT_PRICE,cat:"cultura"},{code:"6P",name:"Barbie silueta",price:DEFAULT_PRICE,cat:"cultura"},{code:"7P",name:"Moño rosa",price:DEFAULT_PRICE,cat:"cultura"},{code:"8P",name:"Barbie cameo",price:DEFAULT_PRICE,cat:"cultura"},{code:"9P",name:"Auto rosa",price:DEFAULT_PRICE,cat:"cultura"},{code:"10P",name:"Diamante rosa",price:DEFAULT_PRICE,cat:"cultura"},{code:"11P",name:"Labial rosa",price:DEFAULT_PRICE,cat:"cultura"},{code:"12P",name:"Barbie doll",price:DEFAULT_PRICE,cat:"cultura"},{code:"13P",name:"Lentes corazón",price:DEFAULT_PRICE,cat:"cultura"},{code:"14P",name:"Barbie letras rosas",price:DEFAULT_PRICE,cat:"cultura"},{code:"15P",name:"Barbie corazón",price:DEFAULT_PRICE,cat:"cultura"},{code:"16P",name:"Sweet Heart",price:DEFAULT_PRICE,cat:"cultura"},{code:"17P",name:"Barbie script",price:DEFAULT_PRICE,cat:"cultura"},{code:"18P",name:"Hello Kitty círculo",price:DEFAULT_PRICE,cat:"cultura"},{code:"19P",name:"Barbie cursiva",price:DEFAULT_PRICE,cat:"cultura"},{code:"20P",name:"Flor smile rosa",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"21P",name:"Flor smile naranja",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"22P",name:"Sombrero cowgirl",price:DEFAULT_PRICE,cat:"cultura"},{code:"23P",name:"Stitch rosa",price:DEFAULT_PRICE,cat:"cultura"},{code:"24P",name:"Flor cerezo",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"25P",name:"My Melody",price:DEFAULT_PRICE,cat:"cultura"},{code:"26P",name:"Strawberry Shortcake",price:DEFAULT_PRICE,cat:"cultura"},{code:"27P",name:"Minnie paleta",price:DEFAULT_PRICE,cat:"cultura"},{code:"28P",name:"Minnie chocolate",price:DEFAULT_PRICE,cat:"cultura"},{code:"29P",name:"Signo dólar rosa",price:DEFAULT_PRICE,cat:"abstracto"},{code:"30P",name:"Mariposa rosa",price:DEFAULT_PRICE,cat:"naturaleza"},
+  {code:"31P",name:"Flor cerezo rama",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"32P",name:"Corazón outline",price:DEFAULT_PRICE,cat:"emojis"},{code:"33P",name:"Corazón sólido",price:DEFAULT_PRICE,cat:"emojis"},{code:"34P",name:"Minnie bow",price:DEFAULT_PRICE,cat:"cultura"},{code:"35P",name:"Cerezas",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"36P",name:"Corazón perro",price:DEFAULT_PRICE,cat:"animales"},{code:"37P",name:"Estrella fugaz",price:DEFAULT_PRICE,cat:"abstracto"},{code:"38P",name:"Rayo rosa",price:DEFAULT_PRICE,cat:"abstracto"},{code:"39P",name:"Torre Eiffel rosa",price:DEFAULT_PRICE,cat:"abstracto"},{code:"40P",name:"OMG letras",price:DEFAULT_PRICE,cat:"emojis"},{code:"41P",name:"Loro rosa",price:DEFAULT_PRICE,cat:"animales"},{code:"42P",name:"Cool Mom",price:DEFAULT_PRICE,cat:"emojis"},{code:"43P",name:"Pink letras",price:DEFAULT_PRICE,cat:"abstracto"},{code:"44P",name:"ilysm letras",price:DEFAULT_PRICE,cat:"emojis"},{code:"45P",name:"XOXO letras",price:DEFAULT_PRICE,cat:"emojis"},{code:"46P",name:"Control gamer",price:DEFAULT_PRICE,cat:"cultura"},{code:"47P",name:"Flor tropical rosa",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"48P",name:"Flor loto",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"49P",name:"Moño puntos",price:DEFAULT_PRICE,cat:"abstracto"},{code:"50P",name:"Dulce espiral",price:DEFAULT_PRICE,cat:"emojis"},{code:"51P",name:"Paleta corazón",price:DEFAULT_PRICE,cat:"emojis"},{code:"52P",name:"Paleta redonda",price:DEFAULT_PRICE,cat:"emojis"},{code:"53P",name:"Caja leche",price:DEFAULT_PRICE,cat:"emojis"},{code:"54P",name:"Piña rosa",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"55P",name:"Dona rosa",price:DEFAULT_PRICE,cat:"emojis"},{code:"56P",name:"Dona amarilla",price:DEFAULT_PRICE,cat:"emojis"},{code:"57P",name:"Starbucks dona",price:DEFAULT_PRICE,cat:"cultura"},{code:"58P",name:"Be Proud arcoíris",price:DEFAULT_PRICE,cat:"emojis"},{code:"59P",name:"Needy corazón",price:DEFAULT_PRICE,cat:"emojis"},
+  {code:"61P",name:"Corazón flor",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"62P",name:"Sailor Moon broche",price:DEFAULT_PRICE,cat:"cultura"},{code:"63P",name:"Labial rosa claro",price:DEFAULT_PRICE,cat:"cultura"},{code:"64P",name:"Yo Perreo Sola",price:DEFAULT_PRICE,cat:"cultura"},{code:"65P",name:"Perfume azul",price:DEFAULT_PRICE,cat:"abstracto"},{code:"66P",name:"Mom Life",price:DEFAULT_PRICE,cat:"emojis"},{code:"67P",name:"Corazón ojos",price:DEFAULT_PRICE,cat:"emojis"},{code:"68P",name:"Chanel logo",price:DEFAULT_PRICE,cat:"cultura"},{code:"69P",name:"Arco decorativo rojo",price:DEFAULT_PRICE,cat:"abstracto"},{code:"70P",name:"Corazón pixel",price:DEFAULT_PRICE,cat:"emojis"},{code:"71P",name:"Corazón estrellas",price:DEFAULT_PRICE,cat:"emojis"},{code:"72P",name:"Símbolo femenino",price:DEFAULT_PRICE,cat:"abstracto"},{code:"73P",name:"Flor rosa pixel",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"74P",name:"Corona dorada",price:DEFAULT_PRICE,cat:"abstracto"},{code:"75P",name:"Chanel logo blanco",price:DEFAULT_PRICE,cat:"cultura"},{code:"76P",name:"Flor Chanel",price:DEFAULT_PRICE,cat:"cultura"},{code:"77P",name:"Prada logo",price:DEFAULT_PRICE,cat:"cultura"},{code:"78P",name:"Givenchy logo",price:DEFAULT_PRICE,cat:"cultura"},{code:"79P",name:"Estrella blanca",price:DEFAULT_PRICE,cat:"abstracto"},{code:"80P",name:"Louis Vuitton logo",price:DEFAULT_PRICE,cat:"cultura"},{code:"81P",name:"Tokidoki niña",price:DEFAULT_PRICE,cat:"cultura"},{code:"82P",name:"My Melody corazón",price:DEFAULT_PRICE,cat:"cultura"},{code:"83P",name:"Barbie rubia",price:DEFAULT_PRICE,cat:"cultura"},{code:"84P",name:"Stitch corazón teal",price:DEFAULT_PRICE,cat:"cultura"},{code:"85P",name:"Stitch moto",price:DEFAULT_PRICE,cat:"cultura"},{code:"86P",name:"Stitch lentes",price:DEFAULT_PRICE,cat:"cultura"},{code:"87P",name:"Stitch azul",price:DEFAULT_PRICE,cat:"cultura"},{code:"88P",name:"Stitch corazón rojo",price:DEFAULT_PRICE,cat:"cultura"},{code:"89P",name:"Be Groovy arcoíris",price:DEFAULT_PRICE,cat:"emojis"},{code:"90P",name:"Kirby",price:DEFAULT_PRICE,cat:"cultura"},
+  {code:"91P",name:"Estrella naranja",price:DEFAULT_PRICE,cat:"abstracto"},{code:"92P",name:"NASA logo",price:DEFAULT_PRICE,cat:"cultura"},{code:"93P",name:"Apple logo",price:DEFAULT_PRICE,cat:"cultura"},{code:"94P",name:"Honduras mapa",price:DEFAULT_PRICE,cat:"abstracto"},{code:"95P",name:"Givenchy rojo",price:DEFAULT_PRICE,cat:"cultura"},{code:"96P",name:"Drew letras",price:DEFAULT_PRICE,cat:"cultura"},{code:"97P",name:"Givenchy negro",price:DEFAULT_PRICE,cat:"cultura"},{code:"98P",name:"Bitcoin",price:DEFAULT_PRICE,cat:"abstracto"},{code:"99P",name:"Minion",price:DEFAULT_PRICE,cat:"cultura"},{code:"100P",name:"Starbucks Coffee",price:DEFAULT_PRICE,cat:"cultura"},{code:"101P",name:"Takis",price:DEFAULT_PRICE,cat:"cultura"},{code:"102P",name:"Taco Bell",price:DEFAULT_PRICE,cat:"cultura"},{code:"103P",name:"Café navideño",price:DEFAULT_PRICE,cat:"emojis"},{code:"104P",name:"Labios LV",price:DEFAULT_PRICE,cat:"cultura"},{code:"105P",name:"Louis Vuitton gris",price:DEFAULT_PRICE,cat:"cultura"},{code:"106P",name:"Peace Love",price:DEFAULT_PRICE,cat:"emojis"},{code:"107P",name:"Dior letras",price:DEFAULT_PRICE,cat:"cultura"},{code:"108P",name:"Comme des Garçons",price:DEFAULT_PRICE,cat:"cultura"},{code:"109P",name:"Balenciaga letras",price:DEFAULT_PRICE,cat:"cultura"},{code:"110P",name:"Guess logo",price:DEFAULT_PRICE,cat:"cultura"},{code:"111P",name:"Yale letras",price:DEFAULT_PRICE,cat:"cultura"},{code:"112P",name:"Coors Light",price:DEFAULT_PRICE,cat:"cultura"},{code:"113P",name:"Grape Soda",price:DEFAULT_PRICE,cat:"cultura"},{code:"114P",name:"Dunkin Donuts",price:DEFAULT_PRICE,cat:"cultura"},{code:"115P",name:"Columbia logo",price:DEFAULT_PRICE,cat:"cultura"},{code:"116P",name:"Under Armour",price:DEFAULT_PRICE,cat:"cultura"},{code:"117P",name:"Cheetos letras",price:DEFAULT_PRICE,cat:"cultura"},{code:"118P",name:"Just Do It",price:DEFAULT_PRICE,cat:"cultura"},{code:"119P",name:"Flamin Hot",price:DEFAULT_PRICE,cat:"cultura"},{code:"120P",name:"Lisa Simpson",price:DEFAULT_PRICE,cat:"cultura"},{code:"121P",name:"Pikachu Nike",price:DEFAULT_PRICE,cat:"cultura"},
+  {code:"122P",name:"Mariposa roja",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"123P",name:"Corazón rojo",price:DEFAULT_PRICE,cat:"emojis"},{code:"124P",name:"Love letras rojas",price:DEFAULT_PRICE,cat:"emojis"},{code:"125P",name:"Labios rojos",price:DEFAULT_PRICE,cat:"emojis"},{code:"126P",name:"Corazón dedos",price:DEFAULT_PRICE,cat:"emojis"},{code:"127P",name:"Cerezas rojas",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"128P",name:"Mom corazón",price:DEFAULT_PRICE,cat:"emojis"},{code:"129P",name:"Boca Rolling Stones",price:DEFAULT_PRICE,cat:"cultura"},{code:"130P",name:"Chocolate barra",price:DEFAULT_PRICE,cat:"emojis"},{code:"131P",name:"Cerezas rojas 2",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"132P",name:"100 puntos",price:DEFAULT_PRICE,cat:"emojis"},{code:"133P",name:"Sandía",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"134P",name:"Torre Eiffel gris",price:DEFAULT_PRICE,cat:"abstracto"},{code:"135P",name:"Hibisco rojo",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"136P",name:"Corazón pixel rojo",price:DEFAULT_PRICE,cat:"emojis"},{code:"137P",name:"Flor rosa pastel",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"138P",name:"Mariposa morada",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"139P",name:"Corazón morado",price:DEFAULT_PRICE,cat:"emojis"},{code:"140P",name:"Mariposa morada oscura",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"141P",name:"Mariposa outline",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"142P",name:"Love colores",price:DEFAULT_PRICE,cat:"emojis"},{code:"143P",name:"Mariposa morada grande",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"144P",name:"Reina fuego",price:DEFAULT_PRICE,cat:"abstracto"},{code:"145P",name:"Arcoíris",price:DEFAULT_PRICE,cat:"abstracto"},
+  {code:"146P",name:"Planta maceta",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"147P",name:"Cactus",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"148P",name:"Lirio blanco",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"149P",name:"Cactus flores",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"150P",name:"Hoja monstera",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"151P",name:"Hoja tropical",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"152P",name:"Hoja monstera grande",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"153P",name:"Aguacate",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"154P",name:"Hello Kitty tropical",price:DEFAULT_PRICE,cat:"cultura"},{code:"155P",name:"Estrella mar",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"156P",name:"Coco tropical",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"157P",name:"Sirenita pelirroja",price:DEFAULT_PRICE,cat:"cultura"},{code:"158P",name:"Hibisco naranja",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"159P",name:"Sol carita",price:DEFAULT_PRICE,cat:"emojis"},{code:"160P",name:"Hibisco morado",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"161P",name:"Hello Kitty sombrero",price:DEFAULT_PRICE,cat:"cultura"},{code:"162P",name:"Hibisco rosa",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"163P",name:"Corazón flor azul",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"164P",name:"Concha marina",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"165P",name:"Concha rosa",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"166P",name:"Sirenita arrecife",price:DEFAULT_PRICE,cat:"cultura"},{code:"167P",name:"Arcoíris pastel",price:DEFAULT_PRICE,cat:"abstracto"},{code:"168P",name:"Chica morena",price:DEFAULT_PRICE,cat:"abstracto"},{code:"169P",name:"Mariposa beige",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"170P",name:"Boba tea",price:DEFAULT_PRICE,cat:"emojis"},{code:"171P",name:"Chica pelirroja",price:DEFAULT_PRICE,cat:"abstracto"},{code:"172P",name:"Starbucks frío",price:DEFAULT_PRICE,cat:"cultura"},{code:"173P",name:"Starbucks frappé",price:DEFAULT_PRICE,cat:"cultura"},{code:"174P",name:"Arcoíris nubes",price:DEFAULT_PRICE,cat:"abstracto"},{code:"175P",name:"Arrecife coral",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"176P",name:"Starbucks verde",price:DEFAULT_PRICE,cat:"cultura"},{code:"177P",name:"Luna",price:DEFAULT_PRICE,cat:"abstracto"},
+  {code:"178P",name:"Gallo",price:DEFAULT_PRICE,cat:"animales"},{code:"179P",name:"Sombrero cowgirl rosa",price:DEFAULT_PRICE,cat:"abstracto"},{code:"180P",name:"Sombrero leopardo",price:DEFAULT_PRICE,cat:"abstracto"},{code:"181P",name:"Botas cowgirl",price:DEFAULT_PRICE,cat:"abstracto"},{code:"182P",name:"Corazón vaca",price:DEFAULT_PRICE,cat:"animales"},{code:"183P",name:"Lucky trébol",price:DEFAULT_PRICE,cat:"abstracto"},{code:"184P",name:"Manchester United",price:DEFAULT_PRICE,cat:"deportes"},{code:"185P",name:"Herradura",price:DEFAULT_PRICE,cat:"abstracto"},{code:"186P",name:"Bota vaquera",price:DEFAULT_PRICE,cat:"abstracto"},{code:"187P",name:"Caballo negro",price:DEFAULT_PRICE,cat:"animales"},{code:"188P",name:"Vaquita kawaii",price:DEFAULT_PRICE,cat:"animales"},{code:"189P",name:"Caballo Detroit Lions",price:DEFAULT_PRICE,cat:"deportes"},{code:"190P",name:"Harley Davidson",price:DEFAULT_PRICE,cat:"cultura"},{code:"191P",name:"Guante béisbol",price:DEFAULT_PRICE,cat:"deportes"},{code:"192P",name:"Moto negra",price:DEFAULT_PRICE,cat:"abstracto"},{code:"193P",name:"Jason Voorhees",price:DEFAULT_PRICE,cat:"cultura"},{code:"194P",name:"Boston Red Sox",price:DEFAULT_PRICE,cat:"deportes"},{code:"195P",name:"Golden State Warriors",price:DEFAULT_PRICE,cat:"deportes"},{code:"196P",name:"Messi 10",price:DEFAULT_PRICE,cat:"deportes"},{code:"197P",name:"Fist negro",price:DEFAULT_PRICE,cat:"abstracto"},{code:"198P",name:"Pesas gym",price:DEFAULT_PRICE,cat:"deportes"},{code:"199P",name:"Balón vóley",price:DEFAULT_PRICE,cat:"deportes"},{code:"200P",name:"Messi Argentina",price:DEFAULT_PRICE,cat:"deportes"},{code:"201P",name:"Messi silueta",price:DEFAULT_PRICE,cat:"deportes"},{code:"202P",name:"Hueso",price:DEFAULT_PRICE,cat:"animales"},{code:"205P",name:"Bulldog",price:DEFAULT_PRICE,cat:"animales"},{code:"206P",name:"Bowl mascotas",price:DEFAULT_PRICE,cat:"animales"},{code:"200A",name:"Perro cocker",price:DEFAULT_PRICE,cat:"animales"},{code:"201A",name:"Perro cachorro",price:DEFAULT_PRICE,cat:"animales"},{code:"202A",name:"Boston Terrier",price:DEFAULT_PRICE,cat:"animales"},
+  {code:"207P",name:"Mama letras",price:DEFAULT_PRICE,cat:"emojis"},{code:"208P",name:"Made in the 90s",price:DEFAULT_PRICE,cat:"emojis"},{code:"209P",name:"11:11",price:DEFAULT_PRICE,cat:"emojis"},{code:"210P",name:"Queen corona",price:DEFAULT_PRICE,cat:"emojis"},{code:"211P",name:"No Bad Vibes",price:DEFAULT_PRICE,cat:"emojis"},{code:"212P",name:"Blessed letras",price:DEFAULT_PRICE,cat:"emojis"},{code:"213P",name:"Baby letras",price:DEFAULT_PRICE,cat:"emojis"},{code:"230P",name:"Coffee taza",price:DEFAULT_PRICE,cat:"emojis"},{code:"214P",name:"Cries letras",price:DEFAULT_PRICE,cat:"emojis"},{code:"215P",name:"Anti Racist",price:DEFAULT_PRICE,cat:"emojis"},{code:"216P",name:"Queen corona amarilla",price:DEFAULT_PRICE,cat:"emojis"},{code:"217P",name:"Love is Love",price:DEFAULT_PRICE,cat:"emojis"},{code:"218P",name:"Over it arcoíris",price:DEFAULT_PRICE,cat:"emojis"},{code:"219P",name:"Cruz Jesús",price:DEFAULT_PRICE,cat:"abstracto"},{code:"220P",name:"Chosen letras",price:DEFAULT_PRICE,cat:"abstracto"},{code:"221P",name:"Cancer letras",price:DEFAULT_PRICE,cat:"abstracto"},{code:"222P",name:"Thing 2",price:DEFAULT_PRICE,cat:"cultura"},{code:"239A",name:"Hello Kitty enfermera",price:DEFAULT_PRICE,cat:"cultura"},{code:"223P",name:"Virgen de Guadalupe",price:DEFAULT_PRICE,cat:"abstracto"},{code:"224P",name:"Biblia",price:DEFAULT_PRICE,cat:"abstracto"},{code:"225P",name:"Diente kawaii",price:DEFAULT_PRICE,cat:"emojis"},{code:"226P",name:"Clipboard médico",price:DEFAULT_PRICE,cat:"abstracto"},{code:"227P",name:"Estetoscopio corazón",price:DEFAULT_PRICE,cat:"abstracto"},{code:"228P",name:"Cruz médica",price:DEFAULT_PRICE,cat:"abstracto"},{code:"229P",name:"Caduceo médico",price:DEFAULT_PRICE,cat:"abstracto"},{code:"240A",name:"Tanjiro Demon Slayer",price:DEFAULT_PRICE,cat:"cultura"},{code:"241A",name:"Personaje anime azul",price:DEFAULT_PRICE,cat:"cultura"},{code:"231A",name:"Sagittarius letras",price:DEFAULT_PRICE,cat:"abstracto"},{code:"232A",name:"Virgo letras",price:DEFAULT_PRICE,cat:"abstracto"},{code:"233A",name:"Honey letras",price:DEFAULT_PRICE,cat:"emojis"},{code:"234A",name:"Pisces letras",price:DEFAULT_PRICE,cat:"abstracto"},{code:"235A",name:"Pastilla",price:DEFAULT_PRICE,cat:"abstracto"},{code:"236A",name:"Corazón vendado",price:DEFAULT_PRICE,cat:"emojis"},{code:"237A",name:"Mariposa México",price:DEFAULT_PRICE,cat:"naturaleza"},{code:"238A",name:"La mama más bonita",price:DEFAULT_PRICE,cat:"emojis"},
+  {code:"231P",name:"Hellfire Club oscuro",price:DEFAULT_PRICE,cat:"cultura"},{code:"232P",name:"Hellfire Club claro",price:DEFAULT_PRICE,cat:"cultura"},{code:"233P",name:"Stranger Things",price:DEFAULT_PRICE,cat:"cultura"},{code:"234P",name:"Moneda Mario",price:DEFAULT_PRICE,cat:"cultura"},{code:"235P",name:"Mario Kart",price:DEFAULT_PRICE,cat:"cultura"},{code:"236P",name:"Mario logo",price:DEFAULT_PRICE,cat:"cultura"},{code:"237P",name:"Pokémon letras",price:DEFAULT_PRICE,cat:"cultura"},{code:"238P",name:"Halo letras",price:DEFAULT_PRICE,cat:"cultura"},{code:"239P",name:"Duff Beer",price:DEFAULT_PRICE,cat:"cultura"},{code:"240P",name:"Control Nintendo",price:DEFAULT_PRICE,cat:"cultura"},{code:"241P",name:"EVE Wall-E",price:DEFAULT_PRICE,cat:"cultura"},{code:"242P",name:"Bloque pregunta Mario",price:DEFAULT_PRICE,cat:"cultura"},{code:"243P",name:"Harry Potter letras",price:DEFAULT_PRICE,cat:"cultura"},{code:"244P",name:"Levi Attack on Titan",price:DEFAULT_PRICE,cat:"cultura"},{code:"245P",name:"Strong Phil 4:13",price:DEFAULT_PRICE,cat:"abstracto"},{code:"246P",name:"Rebelde letras",price:DEFAULT_PRICE,cat:"cultura"},{code:"247P",name:"Mike Monsters Inc",price:DEFAULT_PRICE,cat:"cultura"},{code:"248P",name:"Courage the Dog",price:DEFAULT_PRICE,cat:"cultura"},{code:"249P",name:"Alicia en el País",price:DEFAULT_PRICE,cat:"cultura"},{code:"250P",name:"Harley Quinn",price:DEFAULT_PRICE,cat:"cultura"},{code:"251P",name:"Lightyear rueda",price:DEFAULT_PRICE,cat:"cultura"},{code:"252P",name:"Stormtrooper",price:DEFAULT_PRICE,cat:"cultura"},{code:"253P",name:"Naruto letras",price:DEFAULT_PRICE,cat:"cultura"},{code:"254P",name:"Lisa Simpson 2",price:DEFAULT_PRICE,cat:"cultura"},{code:"311P",name:"Alas Scout AOT",price:DEFAULT_PRICE,cat:"cultura"},{code:"312P",name:"Baby Yoda",price:DEFAULT_PRICE,cat:"cultura"},
+  {code:"281P",name:"Bichota letras",price:DEFAULT_PRICE,cat:"cultura"},{code:"282P",name:"Bichota corazón",price:DEFAULT_PRICE,cat:"cultura"},{code:"283P",name:"Bebecita corazón",price:DEFAULT_PRICE,cat:"cultura"},{code:"284P",name:"Karol G con lentes",price:DEFAULT_PRICE,cat:"cultura"},{code:"285P",name:"Karol G corazón flores",price:DEFAULT_PRICE,cat:"cultura"},{code:"286P",name:"Karol G cabello rosa",price:DEFAULT_PRICE,cat:"cultura"},{code:"287P",name:"Bad Bunny señalando",price:DEFAULT_PRICE,cat:"cultura"},{code:"288P",name:"Real Hasta la Muerte",price:DEFAULT_PRICE,cat:"cultura"},{code:"289P",name:"Fer xxo lentes",price:DEFAULT_PRICE,cat:"cultura"},{code:"290P",name:"BTS letras",price:DEFAULT_PRICE,cat:"cultura"},{code:"291P",name:"Peso Pluma letras",price:DEFAULT_PRICE,cat:"cultura"},{code:"292P",name:"Ojo turco naranja",price:DEFAULT_PRICE,cat:"abstracto"},{code:"293P",name:"Ojo turco sol",price:DEFAULT_PRICE,cat:"abstracto"},{code:"294P",name:"Ojo turco claro",price:DEFAULT_PRICE,cat:"abstracto"},{code:"295P",name:"Ojo turco azul",price:DEFAULT_PRICE,cat:"abstracto"},{code:"296P",name:"Ojo azul simple",price:DEFAULT_PRICE,cat:"abstracto"},{code:"297P",name:"Bad Bunny corazón",price:DEFAULT_PRICE,cat:"cultura"},{code:"298P",name:"One Direction 1D",price:DEFAULT_PRICE,cat:"cultura"},{code:"299P",name:"Murciélago",price:DEFAULT_PRICE,cat:"cultura"},{code:"300P",name:"Bad Bunny pose",price:DEFAULT_PRICE,cat:"cultura"},{code:"301P",name:"Fer xxo gafas verdes",price:DEFAULT_PRICE,cat:"cultura"},{code:"302P",name:"Drake",price:DEFAULT_PRICE,cat:"cultura"},{code:"303P",name:"Nube auto",price:DEFAULT_PRICE,cat:"abstracto"},{code:"304P",name:"Auto amarillo nube",price:DEFAULT_PRICE,cat:"abstracto"},
+  {code:"255P",name:"Yoshi Mario",price:DEFAULT_PRICE,cat:"cultura"},{code:"256P",name:"Luffy One Piece",price:DEFAULT_PRICE,cat:"cultura"},{code:"257P",name:"Spider-Man logo rojo",price:DEFAULT_PRICE,cat:"cultura"},{code:"258P",name:"Spider-Man graffiti",price:DEFAULT_PRICE,cat:"cultura"},{code:"259P",name:"One Piece skull",price:DEFAULT_PRICE,cat:"cultura"},{code:"260P",name:"One Piece skull 2",price:DEFAULT_PRICE,cat:"cultura"},{code:"261P",name:"Nezuko Demon Slayer",price:DEFAULT_PRICE,cat:"cultura"},{code:"262P",name:"Panda kawaii",price:DEFAULT_PRICE,cat:"animales"},{code:"263P",name:"Panda brazos",price:DEFAULT_PRICE,cat:"animales"},{code:"264P",name:"Kakashi Naruto",price:DEFAULT_PRICE,cat:"cultura"},{code:"265P",name:"Nube Akatsuki",price:DEFAULT_PRICE,cat:"cultura"},{code:"266P",name:"Bob Esponja",price:DEFAULT_PRICE,cat:"cultura"},{code:"267P",name:"Patrick Estrella",price:DEFAULT_PRICE,cat:"cultura"},{code:"268P",name:"Honduras bandera",price:DEFAULT_PRICE,cat:"abstracto"},{code:"269P",name:"Sirenita kawaii",price:DEFAULT_PRICE,cat:"cultura"},{code:"270P",name:"Alas Scout AOT 2",price:DEFAULT_PRICE,cat:"cultura"},{code:"271P",name:"Calavera pirata",price:DEFAULT_PRICE,cat:"cultura"},{code:"272P",name:"Rick and Morty",price:DEFAULT_PRICE,cat:"cultura"},{code:"273P",name:"Ariel sirenita",price:DEFAULT_PRICE,cat:"cultura"},{code:"274P",name:"Fantasma blanco",price:DEFAULT_PRICE,cat:"cultura"},{code:"275P",name:"Ira Inside Out",price:DEFAULT_PRICE,cat:"cultura"},{code:"276P",name:"Ariel posando",price:DEFAULT_PRICE,cat:"cultura"},{code:"277P",name:"Envy Inside Out",price:DEFAULT_PRICE,cat:"cultura"},{code:"278P",name:"Baby Yoda verde",price:DEFAULT_PRICE,cat:"cultura"},{code:"279P",name:"Pirata One Piece negro",price:DEFAULT_PRICE,cat:"cultura"},{code:"280P",name:"Shy Guy Mario",price:DEFAULT_PRICE,cat:"cultura"},{code:"305P",name:"Chica burbujas PPG",price:DEFAULT_PRICE,cat:"cultura"},{code:"306P",name:"Chica verde PPG",price:DEFAULT_PRICE,cat:"cultura"},{code:"307P",name:"Chica naranja PPG",price:DEFAULT_PRICE,cat:"cultura"},{code:"308P",name:"Hello Kitty mama",price:DEFAULT_PRICE,cat:"cultura"},{code:"309P",name:"Elsa Frozen",price:DEFAULT_PRICE,cat:"cultura"},{code:"310P",name:"Shrek",price:DEFAULT_PRICE,cat:"cultura"},{code:"313P",name:"Personaje verde",price:DEFAULT_PRICE,cat:"cultura"},
+];
+
+const IMG_EXTS  = ['.png','.jpg','.jpeg','.webp','.gif'];
+const STORE_KEY = 'crocworld_cats_v3';
+
+let ghFiles  = {};   // code → rawUrl (desde GitHub)
+let savedCats = {};
+let cart = {}, activeCat = 'all', adminFilter = 'all', adminUnlocked = false;
+
+// ── Persistencia ───────────────────────────────────────
+function loadSaved() {
+  try { savedCats = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); }
+  catch(e) { savedCats = {}; }
+  // Aplicar categorías guardadas encima de las predefinidas
+  CATALOG.forEach(p => { if(savedCats[p.code]) p.cat = savedCats[p.code]; });
+}
+function saveCat(code, catId) {
+  savedCats[code] = catId;
+  localStorage.setItem(STORE_KEY, JSON.stringify(savedCats));
+  const pin = CATALOG.find(p => p.code === code);
+  if(pin) pin.cat = catId;
+}
+
+// ── Imagen de un pin ──────────────────────────────────
+function getImg(code) {
+  // Buscar en los archivos de GitHub (cualquier extensión)
+  return ghFiles[code.toUpperCase()] || null;
+}
+
+// ── GitHub API ─────────────────────────────────────────
+async function init() {
+  loadSaved();
+  try {
+    const res = await fetch(`https://api.github.com/repos/${GH_USER}/${GH_REPO}/git/trees/${GH_BRANCH}?recursive=1`);
+    if (!res.ok) throw new Error(`GitHub ${res.status}`);
+    const data = await res.json();
+    (data.tree || []).forEach(f => {
+      if(f.type !== 'blob') return;
+      const ext = f.path.toLowerCase().match(/\.[^.]+$/)?.[0];
+      if(!IMG_EXTS.includes(ext)) return;
+      const filename = f.path.split('/').pop();
+      const nameNoExt = filename.replace(/\.[^.]+$/, '');
+      // Soporta formato (1)P.png → 1P  y  (200A).png → 200A
+      const match = nameNoExt.match(/^\((\d+)([A-Za-z]?)\)([A-Za-z]?)$/);
+      let code;
+      if(match) {
+        const num          = match[1];
+        const letterInside = match[2].toUpperCase();  // letra dentro: 200A
+        const letterOutside= match[3].toUpperCase();  // letra fuera: 1P
+        code = (letterInside ? num + letterInside : num + letterOutside);
+      } else {
+        // fallback: usar el nombre tal cual (por si hay archivos con otro formato)
+        code = nameNoExt.toUpperCase();
+      }
+      ghFiles[code] = `https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/${GH_BRANCH}/${f.path}`;
+    });
+  } catch(e) {
+    console.warn('GitHub no disponible, mostrando catálogo sin imágenes:', e.message);
+  }
+  document.getElementById('status').style.display = 'none';
+  buildCatSelect();
+  renderCatalog();
+}
+
+// ── Dropdown ───────────────────────────────────────────
+function buildCatSelect() {
+  const usedIds = [...new Set(CATALOG.map(p => p.cat).filter(c => c !== 'sin-cat'))];
+  const used = CATS.filter(c => usedIds.includes(c.id));
+  const sel = document.getElementById('cat-select');
+  sel.innerHTML = '<option value="all">✨ Todos los pines</option>';
+  used.forEach(c => { const o=document.createElement('option'); o.value=c.id; o.textContent=c.name; sel.appendChild(o); });
+  document.getElementById('filter-bar').style.display = used.length ? 'flex' : 'none';
+  updateCount();
+}
+function onCatChange(val) { activeCat = val; renderCatalog(); updateCount(); }
+function updateCount() {
+  const n = activeCat === 'all' ? CATALOG.length : CATALOG.filter(p => p.cat === activeCat).length;
+  document.getElementById('result-count').textContent = `${n} pines`;
+}
+
+// ── Catálogo ───────────────────────────────────────────
+function renderCatalog() {
+  const el = document.getElementById('catalog');
+  el.innerHTML = '';
+  const usedIds = [...new Set(CATALOG.map(p=>p.cat).filter(c=>c!=='sin-cat'))];
+  const used = CATS.filter(c => usedIds.includes(c.id));
+
+  if(activeCat !== 'all') {
+    appendSection(el, '', CATALOG.filter(p=>p.cat===activeCat), false);
+  } else {
+    used.forEach(cat => {
+      const items = CATALOG.filter(p=>p.cat===cat.id);
+      if(items.length) appendSection(el, cat.name, items, true);
+    });
+    const sinCat = CATALOG.filter(p=>p.cat==='sin-cat');
+    if(sinCat.length) appendSection(el, used.length ? '📦 Sin categoría':'', sinCat, !!used.length);
+  }
+  if(!el.children.length) el.innerHTML='<p style="text-align:center;color:#aaa;padding:40px">Sin productos.</p>';
+  updateCount();
+}
+
+function calcPrice(count) {
+  // Precio escalonado según cantidad en carrito
+  if(count >= 12) return 200/12;      // L.200 / 12 pines
+  if(count >= 5)  return 100/5;       // L.100 / 5 pines
+  return 25;                           // precio unitario
+}
+
+function cartTotal() {
+  const items = Object.values(cart);
+  const n = items.length;
+  if(n >= 12) return 200 + Math.max(0, n - 12) * Math.round(200/12);
+  if(n >= 5)  return 100 + Math.max(0, n - 5)  * 25;
+  return n * 25;
+}
+
+function appendSection(container, title, items, showTitle) {
+  if(showTitle && title) {
+    const t=document.createElement('div'); t.className='section-title';
+    t.innerHTML=`${title} <span>${items.length} pines</span>`;
+    container.appendChild(t);
+  }
+  const grid=document.createElement('div'); grid.className='grid';
+  items.forEach(p => {
+    const card=document.createElement('div');
+    card.className='card'+(cart[p.code]?' sel':'');
+    card.id='c-'+p.code;
+    const imgUrl = getImg(p.code);
+    const catObj = CATS.find(c=>c.id===p.cat);
+    const tag = catObj&&catObj.id!=='sin-cat'?`<div class="cat-tag">${catObj.name}</div>`:'';
+    const imgHtml = imgUrl
+      ? `<img src="${imgUrl}" alt="${p.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" onclick="openImgModal('${p.code}')">`
+        + `<div class="no-img" style="display:none" onclick="openImgModal('${p.code}')"><span>📌</span>${p.code}</div>`
+      : `<div class="no-img" onclick="openImgModal('${p.code}')"><span>📌</span>${p.code}</div>`;
+    const inCart = !!cart[p.code];
+    card.innerHTML=`
+      <div class="code">${p.code}</div>
+      <div class="img-wrap">${imgHtml}</div>
+      <div class="name">${p.name}</div>
+      <div class="price">L. ${p.price}</div>${tag}
+      <div class="card-actions">
+        <button class="btn-ver" onclick="openImgModal('${p.code}')">🔍 Ver</button>
+        <button class="btn-add" onclick="toggleCart(CATALOG.find(x=>x.code==='${p.code}'))">${inCart?'✕ Quitar':'+ Agregar'}</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+  container.appendChild(grid);
+}
+
+// ── Carrito ────────────────────────────────────────────
+function toggleCart(p) {
+  if(!p) return;
+  cart[p.code]?delete cart[p.code]:(cart[p.code]=p);
+  const inCart = !!cart[p.code];
+  const c=document.getElementById('c-'+p.code);
+  if(c){
+    c.classList.toggle('sel', inCart);
+    const btn=c.querySelector('.btn-add');
+    if(btn) btn.textContent = inCart ? '✕ Quitar' : '+ Agregar';
+  }
+  updateCartBtn();
+  // Actualizar modal si está abierto para este pin
+  if(currentModalCode===p.code) updateModalAddBtn();
+}
+function updateCartBtn() {
+  const n=Object.keys(cart).length;
+  const total=cartTotal();
+  document.getElementById('cart-btn').style.display=n?'flex':'none';
+  document.getElementById('cart-count').textContent=n;
+  document.getElementById('cart-total').textContent=`L. ${total}`;
+}
+function clearCart(){cart={};renderCatalog();document.getElementById('cart-btn').style.display='none';}
+function sendWA(){
+  const items=Object.values(cart);
+  const n=items.length;
+  const total=cartTotal();
+  let promo='';
+  if(n>=12) promo='12 pines o más: L. 200';
+  else if(n>=5) promo='5 pines o más: L. 100';
+  else promo='Precio unitario: L. 25 c/u';
+  let msg='*Pedido Croc World HN*%0A%0A';
+  items.forEach(i=>{msg+=`- ${i.code}: ${i.name}%0A`;});
+  msg+=`%0ACantidad: ${n} pines%0A`;
+  msg+=`Precio aplicado: ${promo}%0A`;
+  msg+=`*Total pines: L. ${total}*%0A`;
+  msg+=`%0AEnvío a domicilio: L. 70%0A`;
+  msg+=`*Total con envío: L. ${total+70}*`;
+  window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`);
+}
+
+// ── Login ──────────────────────────────────────────────
+function openLoginModal(){
+  if(adminUnlocked){openAdmin();return;}
+  document.getElementById('admin-pwd').value='';
+  document.getElementById('pwd-error').textContent='';
+  document.getElementById('login-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('admin-pwd').focus(),120);
+}
+function closeLoginModal(){document.getElementById('login-modal').classList.remove('open');}
+function checkPwd(){
+  const input=document.getElementById('admin-pwd');
+  if(input.value===ADMIN_PASSWORD){adminUnlocked=true;closeLoginModal();openAdmin();}
+  else{
+    document.getElementById('pwd-error').textContent='Contraseña incorrecta.';
+    input.value='';input.classList.remove('shake');void input.offsetWidth;input.classList.add('shake');input.focus();
+  }
+}
+document.getElementById('login-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeLoginModal();});
+
+// ── Panel Admin ────────────────────────────────────────
+function openAdmin(){
+  document.getElementById('admin-panel').style.display='block';
+  document.body.style.overflow='hidden';
+  renderAdminFilter();renderAdmin();
+}
+function closeAdmin(){
+  document.getElementById('admin-panel').style.display='none';
+  document.body.style.overflow='';
+  buildCatSelect();renderCatalog();
+}
+function renderAdminFilter(){
+  const el=document.getElementById('admin-filter');el.innerHTML='';
+  [{id:'all',label:'Todos'},{id:'sin-cat',label:'📦 Sin categoría'},...CATS.filter(c=>c.id!=='sin-cat').map(c=>({id:c.id,label:c.name}))]
+  .forEach(f=>{const b=document.createElement('button');b.textContent=f.label;b.className=adminFilter===f.id?'active':'';b.onclick=()=>{adminFilter=f.id;renderAdminFilter();renderAdmin();};el.appendChild(b);});
+}
+function renderAdmin(){
+  const query=(document.getElementById('admin-search').value||'').toLowerCase();
+  const grid=document.getElementById('admin-grid');grid.innerHTML='';
+  const filtered=CATALOG.filter(p=>{
+    const matchCat=adminFilter==='all'||p.cat===adminFilter;
+    const matchQ=!query||p.code.toLowerCase().includes(query)||p.name.toLowerCase().includes(query);
+    return matchCat&&matchQ;
+  });
+  const done=CATALOG.filter(p=>p.cat&&p.cat!=='sin-cat').length;
+  const pct=Math.round(done/CATALOG.length*100);
+  document.getElementById('progress-bar').style.width=pct+'%';
+  document.getElementById('progress-text').textContent=`${done} de ${CATALOG.length} categorizados (${pct}%)`;
+  filtered.forEach(p=>{
+    const card=document.createElement('div');
+    card.className='admin-card'+(p.cat&&p.cat!=='sin-cat'?' categorized':'');
+    card.id='ac-'+p.code;
+    const imgUrl=getImg(p.code);
+    const imgHtml=imgUrl
+      ?`<img src="${imgUrl}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="no-img-admin" style="display:none">${p.code}</div>`
+      :`<div class="no-img-admin">${p.code}</div>`;
+    card.innerHTML=`<div class="admin-img">${imgHtml}</div><div class="admin-info"><div class="fname" title="${p.code} - ${p.name}">${p.code} — ${p.name}</div><select onchange="assignCat('${p.code}',this.value)">${CATS.map(c=>`<option value="${c.id}" ${p.cat===c.id?'selected':''}>${c.name}</option>`).join('')}</select></div>`;
+    grid.appendChild(card);
+  });
+  if(!filtered.length) grid.innerHTML='<p style="color:#aaa;font-size:13px;padding:16px">Sin resultados.</p>';
+}
+function assignCat(code,catId){
+  saveCat(code,catId);
+  const card=document.getElementById('ac-'+code);
+  if(card) card.classList.toggle('categorized',catId!=='sin-cat');
+  renderAdmin();
+}
+function exportCategories(){
+  const lines=CATALOG.map(p=>`${p.code}|${p.name}|${p.cat}`).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lines],{type:'text/plain'}));a.download='categorias_croc.txt';a.click();
+}
+
+
+// ── Modal imagen grande ────────────────────────────────
+let currentModalCode = null;
+function openImgModal(code) {
+  const p = CATALOG.find(x=>x.code===code);
+  if(!p) return;
+  currentModalCode = code;
+  const imgUrl = getImg(code);
+  const imgEl = document.getElementById('img-modal-img');
+  if(imgUrl){ imgEl.src=imgUrl; imgEl.style.display='block'; }
+  else { imgEl.src=''; imgEl.style.display='none'; }
+  document.getElementById('img-modal-name').textContent = `${p.code} — ${p.name}`;
+  document.getElementById('img-modal-price').textContent = `L. ${p.price} por pin`;
+  updateModalAddBtn();
+  document.getElementById('img-modal').classList.add('open');
+}
+function updateModalAddBtn() {
+  const btn = document.getElementById('img-modal-add');
+  const inCart = !!cart[currentModalCode];
+  btn.textContent = inCart ? '✕ Quitar del pedido' : '+ Agregar al pedido';
+  btn.className = inCart ? 'en-pedido' : '';
+}
+function toggleCartFromModal() {
+  const p = CATALOG.find(x=>x.code===currentModalCode);
+  if(p) toggleCart(p);
+}
+function closeImgModal() {
+  document.getElementById('img-modal').classList.remove('open');
+  currentModalCode = null;
+}
+document.getElementById('img-modal').addEventListener('click', e=>{
+  if(e.target===document.getElementById('img-modal')) closeImgModal();
+});
+
+window.onload=init;
+</script>
+</body>
+</html>
